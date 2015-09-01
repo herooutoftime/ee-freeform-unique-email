@@ -1,0 +1,5 @@
+# EE modules via modman
+
+system/expressionengine/third_party/freeform_unique_email      system/expressionengine/third_party/freeform_unique_email/
+system/expressionengine/templates/default_site/freeform_unique_email.group      system/expressionengine/templates/default_site/freeform_unique_email.group/
+themes/third_party/freeform_unique_email      themes/third_party/freeform_unique_email/
