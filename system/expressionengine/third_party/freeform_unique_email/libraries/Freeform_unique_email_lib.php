@@ -50,15 +50,20 @@ class Freeform_unique_email_lib {
 
   public function validate_email_json()
   {
+    require_once PATH_THIRD."transcribe/mod.transcribe.php";
+    $transcribe = new Transcribe();
     $email = $this->EE->input->get('email');
 
     if(!filter_var($email, FILTER_VALIDATE_EMAIL))
-      return array('success' => false, 'message' => sprintf(lang('freeform_unique_email_invalid'), $email), 'email' => $email);
+        return array('success' => false, 'message' => sprintf($transcribe->replace('freeform_unique_email_invalid'), $email), 'email' => $email);
+    //   return array('success' => false, 'message' => sprintf(lang('freeform_unique_email_invalid'), $email), 'email' => $email);
 
     if(!$this->get_uniqueness($email))
-      return array('success' => false, 'message' => sprintf(lang('freeform_unique_email_taken'), $email), 'email' => $email);
+        return array('success' => false, 'message' => sprintf($transcribe->replace('freeform_unique_email_taken'), $email), 'email' => $email);
+    //   return array('success' => false, 'message' => sprintf(lang('freeform_unique_email_taken'), $email), 'email' => $email);
 
-    return array('success' => true, 'message' => sprintf(lang('freeform_unique_email_available'), $email), 'email' => $email);
+    return array('success' => true, 'message' => sprintf($transcribe->replace('freeform_unique_email_available'), $email), 'email' => $email);
+    // return array('success' => true, 'message' => sprintf(lang('freeform_unique_email_available'), $email), 'email' => $email);
   }
 
   public function get_uniqueness($value, $field = 'email')
@@ -68,17 +73,39 @@ class Freeform_unique_email_lib {
       return;
 
     $field_name = 'form_field_' . $this->get_real_fieldname($field);
+    $tables = $this->get_forms_by_prefix('newsletter');
+    $counts = array();
+    foreach($tables->result() as $table) {
 
-    $results = $this->EE->db
-      ->select('COUNT(*) AS count')
-      ->from('freeform_form_entries_4')
-      ->where($field_name, $value)
-      ->get();
+        $results = $this->EE->db
+          ->select('COUNT(*) AS count')
+          ->from('freeform_form_entries_' . $table->form_id)
+          ->where($field_name, $value)
+          ->get();
+        $counts[$table->form_id] = (int) $results->row('count');
+        $forms[$table->form_id] = array(
+            'name' => $table->form_name,
+            'label' => $table->form_label,
+            'count' => $results->row('count')
+        );
+    }
 
-    if($results->row('count') > 0)
-      return false;
+    $unique = true;
+    $filtered = array_filter($counts);
+    if(!empty($filtered))
+        $unique = false;
 
-    return true;
+    return $unique;
+  }
+
+  public function get_forms_by_prefix($prefix)
+  {
+      $tables = $this->EE->db
+        // ->select('*')
+        ->from('freeform_forms')
+        ->like('form_name', $prefix)
+        ->get();
+        return $tables;
   }
 
   public function get_real_fieldname($field)
